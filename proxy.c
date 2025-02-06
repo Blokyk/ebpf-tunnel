@@ -21,6 +21,8 @@
 struct Config {
   __u16 proxy_port;
   __u64 proxy_pid;
+  __u16 real_proxy_port;
+  __u64 real_proxy_pid;
 };
 
 struct Socket {
@@ -59,11 +61,13 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   if (ctx->user_family != AF_INET) return 1;
   if (ctx->protocol != IPPROTO_TCP) return 1;
 
-  // This prevents the proxy from proxying itself
   __u32 key = 0;
   struct Config *conf = bpf_map_lookup_elem(&map_config, &key);
   if (!conf) return 1;
-  if ((bpf_get_current_pid_tgid() >> 32) == conf->proxy_pid) return 1;
+
+  // This prevents the go and real proxies from being proxied
+  __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
+  if (curr_pid == conf->proxy_pid || curr_pid == conf->real_proxy_pid) return 1;
 
   // This field contains the IPv4 address passed to the connect() syscall
   // a.k.a. connect to this socket destination address and port
@@ -90,7 +94,7 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
 }
 
 // This program is called whenever there's a socket operation on a particular cgroup (retransmit timeout, connection establishment, etc.)
-// This is just to record client source address and port after succesful connection establishment to the proxy
+// This is just to record client source address and port after successful connection establishment to the proxy
 SEC("sockops")
 int cg_sock_ops(struct bpf_sock_ops *ctx) {
   // Only forward on IPv4 connections
@@ -114,15 +118,15 @@ int cg_sock_ops(struct bpf_sock_ops *ctx) {
   return 0;
 }
 
-// This is triggered when the proxy queries the original destination information through getsockopt SO_ORIGINAL_DST. 
-// This program uses the source port of the client to retrieve the socket's cookie from map_ports, 
-// and then from map_socks to get the original destination information, 
+// This is triggered when the proxy queries the original destination information through getsockopt SO_ORIGINAL_DST.
+// This program uses the source port of the client to retrieve the socket's cookie from map_ports,
+// and then from map_socks to get the original destination information,
 // then establishes a connection with the original target and forwards the client's request.
 SEC("cgroup/getsockopt")
 int cg_sock_opt(struct bpf_sockopt *ctx) {
   // The SO_ORIGINAL_DST socket option is a specialized option used primarily in the context of network address translation (NAT) and transparent proxying.
-  // In a typical NAT or transparent proxy setup, incoming packets are redirected from their original destination to a proxy server. 
-  // The proxy server, upon receiving the packets, often needs to know the original destination address in order to handle the traffic appropriately. 
+  // In a typical NAT or transparent proxy setup, incoming packets are redirected from their original destination to a proxy server.
+  // The proxy server, upon receiving the packets, often needs to know the original destination address in order to handle the traffic appropriately.
   // This is where SO_ORIGINAL_DST comes into play.
   if (ctx->optname != SO_ORIGINAL_DST) return 1;
   // Only forward IPv4 TCP connections
@@ -134,7 +138,7 @@ int cg_sock_opt(struct bpf_sockopt *ctx) {
   // is retrieving the original dst port of the client so it's "querying" the destination port of the client
   __u16 src_port = ntohs(ctx->sk->dst_port);
 
-  // Retrieve the socket cookie using the clients' src_port 
+  // Retrieve the socket cookie using the clients' src_port
   __u64 *cookie = bpf_map_lookup_elem(&map_ports, &src_port);
   if (!cookie) return 1;
 

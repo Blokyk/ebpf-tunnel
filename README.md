@@ -66,7 +66,7 @@ go build
     <summary>
         Demo of <a href="https://github.com/dorkamotorka/transparent-proxy-ebpf">original app from dorkamotorka</a>
     </summary>
-    https://github.com/user-attachments/assets/325745b2-9be1-43cd-bd64-14fa6ac5f5e0
+    <video src="https://github.com/user-attachments/assets/325745b2-9be1-43cd-bd64-14fa6ac5f5e0">
 </details>
 
 You need elevated privilege to run this (you're inserting a packet

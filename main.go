@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -type Config rerouter rerouter.ebpf.c
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -type Config rerouter rerouter.ebpf.c -- -I/usr/include/i386-linux-gnu -I/usr/i686-linux-gnu/include
 
 import (
 	"fmt"

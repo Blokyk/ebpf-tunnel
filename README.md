@@ -50,6 +50,14 @@ On Ubuntu, this will be:
 sudo apt install llvm-dev clang linux-headers-generic libbpf-dev
 ```
 
+You also need to install the headers for x86 platform, as needed by eBPF. This
+can be done by either installing any of the following, as applicable to your
+system:
+- `libc6-dev-i386` *recommended* -- most lightweight, doesn't need any config
+- `libc6-dev:i386` -- needs to enable i386 architecture for `dpkg`/`apt`
+- `gcc-multilib` -- includes everything possibly needed and more, but doesn't
+  need any `dpkg` architecture change
+
 You can then generate the eBPF->Go bindings with
 ```sh
 go generate

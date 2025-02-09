@@ -74,7 +74,7 @@ func getPidFromInode(inode int) (int, error) {
 	return -1, fmt.Errorf("no process found for inode %d", inode)
 }
 
-func getPidFromPort(proxyPort int16) (uint64, error) {
+func getPidFromPort(proxyPort uint16) (uint64, error) {
 	f, err := os.Open("/proc/net/tcp")
 	if err != nil {
 		log.Fatalf("Couldn't open /proc/net/tcp: %v", err)
@@ -97,14 +97,14 @@ func getPidFromPort(proxyPort int16) (uint64, error) {
 		// we only care about the port, though ip should always be 0100007F (127.0.0.1)
 		localAddr := fields[1]
 		portStr := localAddr[9:]
-		port, err := strconv.ParseInt(portStr, 16, 16)
+		port, err := strconv.ParseUint(portStr, 16, 16)
 
 		if err != nil {
 			log.Printf("WARN: Couldn't parse port number from '%s'", portStr)
 			continue
 		}
 
-		if port != int64(proxyPort) {
+		if uint16(port) != proxyPort {
 			continue
 		}
 

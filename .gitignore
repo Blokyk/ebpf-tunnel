@@ -8,6 +8,10 @@
 # Ignore go binary
 ebpf-tunnel
 
+# Ignore tunnel binary
+tunnel/connect
+tunnel/tunnel
+
 # IDE folder
 .vscode/
 

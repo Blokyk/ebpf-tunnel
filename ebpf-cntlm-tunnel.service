@@ -1,0 +1,13 @@
+[Unit]
+Description=An eBPF filter to tunnel all outgoing requests through Cntlm
+BindsTo=cntlm.service
+Requires=cntlm.service
+Before=multi-user.target
+
+[Service]
+Type=exec
+Restart=on-failure
+ExecStart=/home/blokyk/dev/lab/ebpf-tunnel/ebpf-tunnel
+
+[Install]
+WantedBy=multi-user.target

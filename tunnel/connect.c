@@ -560,7 +560,7 @@ expand_host_and_port (const char *fmt, const char *host, int port)
     buf = xmalloc (len);
     dst = buf;
     src = fmt;
-    
+
     while (*src) {
 	if (*src == '%') {
 	    switch (src[1]) {
@@ -952,7 +952,7 @@ make_localnet_as_direct (void)
     if (GetIpAddrTable(NULL, &size, 0) == ERROR_INSUFFICIENT_BUFFER) {
 	table = (MIB_IPADDRTABLE *) xmalloc (size);
     } else {
-	error("unexpected GetIpAddrTable() behaviour, errno=%d\n", 
+	error("unexpected GetIpAddrTable() behaviour, errno=%d\n",
 	      WSAGetLastError());
 	return; /* give up getting local addresses */
     }
@@ -1069,7 +1069,7 @@ is_direct_address (const struct in_addr addr)
 /* check s1 is ends with s2.
    return 1 if exact match or domain part match.
    return 0 if s1 is shorter than s2 or partial match.
-   For example, 
+   For example,
     ends_with("bar.com", "bar.com")        => 1 (exact match)
     ends_with("foo.bar.com", "bar.com")    => 1 (domain match)
     ends_with("foo.beebar.com", "bar.com") => 0 (partial match)
@@ -1101,7 +1101,7 @@ domain_match(const char *s1, const char *s2)
     return 0;                                   /* not match */
 }
 
-/* Check given NAME is ends with one of 
+/* Check given NAME is ends with one of
    registered direct name entry.
    Return 1 if matched, or 0.
 */
@@ -1664,7 +1664,7 @@ getarg( int argc, char **argv )
     /* add local addr/mask to direct table automaticaly */
     make_localnet_as_direct();
 #endif
-    
+
     set_relay( method, server );
 
     /* check destination HOST (MUST) */
@@ -2603,7 +2603,7 @@ begin_telnet_relay( SOCKET s )
     /* make request string with replacing %h by destination hostname
        and %p by port number, etc. */
     cmd = expand_host_and_port(telnet_command, dest_host, dest_port);
-    
+
     /* Sorry, we send request string now without waiting a prompt. */
     if (sendf(s, "%s\r\n", cmd) < 0) {
 	free(cmd);
@@ -2956,7 +2956,7 @@ retry:
 	free(dest_host);
 	dest_host = strdup(inet_ntoa(dest_addr.sin_addr));
     }
-	
+
     if (check_direct(dest_host))
         relay_method = METHOD_DIRECT;
     /* make connection */

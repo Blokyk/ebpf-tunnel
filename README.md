@@ -2,6 +2,10 @@
 
 ## What ?
 
+A "transparent" or "invisible" proxy is one that acts with the user needing to
+configure it. It generally doesn't affect requests significantly but instead
+just forwards them silently.
+
 This repository includes an eBPF program that redirects all outgoing TCP
 requests to a local server listening on a specific port (by default,
 18000). That server is then able to connect to a proxy by itself, and
@@ -11,7 +15,7 @@ tunnel the packets through there.
 scenario you'll still have to use Cntlm first, and redirect the packets
 there.** It also doesn't support remote proxies, but that should be too
 hard to fix, since they're easier to support than local ones; I just
-implemented the things I needed first.
+implemented the things I needed first. [See the open issues for details](https://github.com/Blokyk/transparent-proxy-ebpf/issues)
 
 *I'm not a Go dev, this is a fork of [dorkamotorka/transparent-proxy-ebpf](https://github.com/dorkamotorka/transparent-proxy-ebpf)
 that I tweaked to my needs. Feel free to submit pull requests or issues
@@ -80,7 +84,7 @@ go build
 You need elevated privilege to run this (you're inserting a packet
 rewriter into the kernel after all):
 ```
-sudo ./proxy
+sudo ./ebpf-tunnel
 ```
 
 Currently, this is written mostly to pass things onto a local

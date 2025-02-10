@@ -7,7 +7,7 @@ Before=multi-user.target
 [Service]
 Type=exec
 Restart=on-failure
-ExecStart=/home/blokyk/dev/lab/ebpf-tunnel/ebpf-tunnel
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target

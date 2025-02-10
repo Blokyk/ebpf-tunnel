@@ -6,7 +6,7 @@
 *_bpfel.go
 
 # Ignore go binary
-proxy
+ebpf-tunnel
 
 # IDE folder
 .vscode/

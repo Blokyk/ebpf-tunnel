@@ -1,4 +1,4 @@
-module proxy
+module ebpf-tunnel
 
 go 1.22.3
 

@@ -18,6 +18,8 @@
 
 #define MAX_CONNECTIONS 20000
 
+#define LOCALHOST 0x7f000001
+
 struct Config {
   __u16 proxy_port;
   __u64 proxy_pid;
@@ -74,6 +76,10 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   __u32 dst_addr = ntohl(ctx->user_ip4);
   // This field contains the port number passed to the connect() syscall
   __u16 dst_port = ntohl(ctx->user_port) >> 16;
+
+  // if this is a local request, don't redirect at all
+  if (dst_addr == LOCALHOST) return 1;
+
   // Unique identifier for the destination socket
   __u64 cookie = bpf_get_socket_cookie(ctx);
 
@@ -85,7 +91,7 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   bpf_map_update_elem(&map_socks, &cookie, &sock, 0);
 
   // Redirect the connection to the proxy
-  ctx->user_ip4 = htonl(0x7f000001); // 127.0.0.1 == proxy IP
+  ctx->user_ip4 = htonl(LOCALHOST); // 127.0.0.1 == proxy IP
   ctx->user_port = htonl(conf->proxy_port << 16); // Proxy port
 
   bpf_printk("Redirecting client connection to proxy\n");

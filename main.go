@@ -147,6 +147,16 @@ func main() {
 	}
 	defer sockoptLink.Close()
 
+	boundpidsLink, err := link.AttachCgroup(link.CgroupOptions{
+		Path:    CGROUP_PATH,
+		Attach:  ebpf.AttachCGroupInet4PostBind,
+		Program: objs.CgPostBind4,
+	})
+	if err != nil {
+		log.Print("Attaching CgPostBind4 program to Cgroup:", err)
+	}
+	defer boundpidsLink.Close()
+
 	// Start the proxy server on the localhost
 	// We only demonstrate IPv4 in this example, but the same approach can be used for IPv6
 	bpfProxyAddr := fmt.Sprintf("127.0.0.1:%d", BPF_PROXY_PORT)

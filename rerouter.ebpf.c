@@ -1,9 +1,12 @@
 //go:build ignore
+#include <asm-generic/int-ll64.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <linux/bpf.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include "bpf-builtin.h"
 #include "bpf-utils.h"
@@ -17,6 +20,9 @@
 })
 
 #define MAX_CONNECTIONS 20000
+
+// maximum number of ports that can be ignored
+#define MAX_NOPROXY_PORTS 1
 
 #define LOCALHOST 0x7f000001
 
@@ -55,6 +61,15 @@ struct {
   __u64 *value;
 } map_ports SEC(".maps");
 
+struct {
+  int (*type)[BPF_MAP_TYPE_HASH];
+  int (*max_entries)[MAX_NOPROXY_PORTS];
+  pid_t *key;
+  __u16 *value;
+} map_bound_pids SEC(".maps");
+
+bool is_proxy_process = false;
+
 // This hook is triggered when a process (inside the cgroup where this is attached) calls the connect() syscall
 // It redirect the connection to the transparent proxy but stores the original destination address and port in a map_socks
 SEC("cgroup/connect4")
@@ -67,9 +82,16 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   struct Config *conf = bpf_map_lookup_elem(&map_config, &key);
   if (!conf) return 1;
 
-  // This prevents the go and real proxies from being proxied
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
-  if (curr_pid == conf->proxy_pid || curr_pid == conf->real_proxy_pid) return 1;
+
+  // This prevents the tunnel (in go or c) from being proxied
+  if (curr_pid == conf->proxy_pid) return 1;
+
+  __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
+
+  // if this is the real proxy, don't proxy it
+  if (bound_port && *bound_port == conf->real_proxy_port)
+    return 1;
 
   // This field contains the IPv4 address passed to the connect() syscall
   // a.k.a. connect to this socket destination address and port
@@ -163,6 +185,36 @@ int cg_sock_opt(struct bpf_sockopt *ctx) {
   ctx->retval = 0;
 
   bpf_printk("Redirecting connection to original destination\n");
+
+  return 1;
+}
+
+// This programs tries to detect if the current process is the real proxy's process,
+// by catching any call to bind(REAL_PROXY_PORT), and writing to a hash map that
+// keeps a list of the passthrough pids
+SEC("cgroup/post_bind4")
+int cg_post_bind4(struct bpf_sock *ctx) {
+  // Only forward IPv4 TCP connections
+  if (ctx->family != AF_INET) return 1;
+  if (ctx->protocol != IPPROTO_TCP) return 1;
+
+  __u32 key = 0;
+  struct Config *conf = bpf_map_lookup_elem(&map_config, &key);
+  if (!conf) return 1;
+
+  // if this isn't the real proxy, we don't care
+  if (ctx->dst_port != conf->real_proxy_port) return 1;
+
+  __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
+
+  int res = bpf_map_update_elem(&map_bound_pids, &(ctx->dst_port), &curr_pid, BPF_ANY);
+
+  if (res < 0) {
+    bpf_printk("Error trying to register PID %d as passthrough", curr_pid);
+    return 1;
+  }
+
+  bpf_printk("PID %d was just bound to %d, will let it passthrough", curr_pid, ctx->dst_port);
 
   return 1;
 }

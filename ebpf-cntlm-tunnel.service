@@ -1,8 +1,9 @@
 [Unit]
 Description=An eBPF filter to tunnel all outgoing requests through Cntlm
+Before=multi-user.target
 BindsTo=cntlm.service
 Requires=cntlm.service
-Before=multi-user.target
+After=cntlm.service
 
 [Service]
 Type=exec

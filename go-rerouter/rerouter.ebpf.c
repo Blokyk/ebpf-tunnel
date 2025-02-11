@@ -68,8 +68,6 @@ struct {
   __u16 *value;
 } map_bound_pids SEC(".maps");
 
-bool is_proxy_process = false;
-
 // This hook is triggered when a process (inside the cgroup where this is attached) calls the connect() syscall
 // It redirect the connection to the transparent proxy but stores the original destination address and port in a map_socks
 SEC("cgroup/connect4")
@@ -202,12 +200,14 @@ int cg_post_bind4(struct bpf_sock *ctx) {
   struct Config *conf = bpf_map_lookup_elem(&map_config, &key);
   if (!conf) return 1;
 
+  __u16 dst_port = ntohs(ctx->dst_port);
+
   // if this isn't the real proxy, we don't care
-  if (ctx->dst_port != conf->real_proxy_port) return 1;
+  if (dst_port != conf->real_proxy_port) return 1;
 
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
 
-  int res = bpf_map_update_elem(&map_bound_pids, &(ctx->dst_port), &curr_pid, BPF_ANY);
+  int res = bpf_map_update_elem(&map_bound_pids, &curr_pid, &dst_port, BPF_ANY);
 
   if (res < 0) {
     bpf_printk("Error trying to register PID %d as passthrough", curr_pid);

@@ -5,15 +5,18 @@
 *_bpfeb.go
 *_bpfel.go
 
-# Ignore go binary
-ebpf-tunnel
-
-# Ignore tunnel binary
+# Ignore binaries
+ebpf-rerouter
+proxy-tunnel
 tunnel/connect
 tunnel/tunnel
 
 # IDE folder
 .vscode/
+
+# Old/backup files
+*.old
+*.bkp
 
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore

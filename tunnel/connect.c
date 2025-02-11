@@ -1299,14 +1299,14 @@ w32_tty_readpass( const char *prompt, char *buf, size_t size )
 
      Table.1 Order of environment variables for username
 
-        |  SOCKS v5   |  SOCKS v4   |   HTTP proxy    |
-      --+-------------+-------------+-----------------+
-      1 | SOCKS45_USER | SOCKS4_USER | HTTP_PROXY_USER |
-      --+-------------+-------------+                 |
-      2 |        SOCKS_USER         |                 |
-      --+---------------------------+-----------------+
-      3 |              CONNECT_USER                   |
-      --+---------------------------------------------+
+        |   SOCKS v5   |  SOCKS v4   |   HTTP proxy    |
+      --+--------------+-------------+-----------------+
+      1 | SOCKS45_USER | SOCKS4_USER |                 |
+      --+--------------+-------------+ HTTP_PROXY_USER |
+      2 |         SOCKS_USER         |                 |
+      --+----------------------------+-----------------+
+      3 |               CONNECT_USER                   |
+      --+----------------------------------------------+
 
    Password is taken from
      1) by environment variables (see table.2)
@@ -1782,7 +1782,7 @@ switch_ns (struct sockaddr_in *ns)
  */
 
 int
-local_resolve (const char *host, struct sockaddr_in *addr)
+resolve (const char *host, struct sockaddr_in *addr)
 {
     struct hostent *ent;
     if ( strspn(host, dotdigits) == strlen(host) ) {
@@ -1812,7 +1812,7 @@ open_connection( const char *host, u_short port )
     struct sockaddr_in saddr;
 
     /* resolve address of proxy or direct target */
-    if (local_resolve (host, &saddr) < 0) {
+    if (resolve (host, &saddr) < 0) {
         error("can't resolve hostname: %s\n", host);
         return SOCKET_ERROR;
     }
@@ -2460,7 +2460,7 @@ basic_auth (SOCKET s)
    proxy server.
  */
 int
-begin_http_relay( SOCKET s )
+begin_http_relay(SOCKET s)
 {
     char buf[1024];
     int result;
@@ -2950,7 +2950,7 @@ retry:
     /* resolve host name localy to determine direct or not if allowed */
     if (relay_method == METHOD_SOCKS &&
         socks_resolve == RESOLVE_LOCAL &&
-	local_resolve (dest_host, &dest_addr) == 0) {
+	resolve (dest_host, &dest_addr) == 0) {
 	/* resolved, replace dest_host
 	   if failed, simply ignore here */
 	free(dest_host);

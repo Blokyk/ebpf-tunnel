@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -type Config rerouter rerouter.ebpf.c -- -I/usr/include/i386-linux-gnu -I/usr/i686-linux-gnu/include
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -type Config rerouter rerouter.ebpf.c -- -g -I/usr/include/i386-linux-gnu -I/usr/i686-linux-gnu/include
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ func main() {
 	// NOTE: we could also pin the eBPF program
 	var objs rerouterObjects
 	if err := loadRerouterObjects(&objs, nil); err != nil {
-		log.Print("Error loading eBPF objects:", err)
+		log.Fatalf("Error loading eBPF program: %v", err)
 	}
 	defer objs.Close()
 
@@ -39,7 +39,7 @@ func main() {
 		Program: objs.CgConnect4,
 	})
 	if err != nil {
-		log.Print("Attaching CgConnect4 program to Cgroup:", err)
+		log.Fatalf("Attaching CgConnect4 program to Cgroup: %v", err)
 	}
 	defer connect4Link.Close()
 
@@ -49,7 +49,7 @@ func main() {
 		Program: objs.CgSockOps,
 	})
 	if err != nil {
-		log.Print("Attaching CgSockOps program to Cgroup:", err)
+		log.Fatalf("Attaching CgSockOps program to Cgroup: %v", err)
 	}
 	defer sockopsLink.Close()
 
@@ -59,7 +59,7 @@ func main() {
 		Program: objs.CgSockOpt,
 	})
 	if err != nil {
-		log.Print("Attaching CgSockOpt program to Cgroup:", err)
+		log.Fatalf("Attaching CgSockOpt program to Cgroup: %v", err)
 	}
 	defer sockoptLink.Close()
 
@@ -69,7 +69,7 @@ func main() {
 		Program: objs.CgPostBind4,
 	})
 	if err != nil {
-		log.Print("Attaching CgPostBind4 program to Cgroup:", err)
+		log.Fatalf("Attaching CgPostBind4 program to Cgroup: %v", err)
 	}
 	defer boundpidsLink.Close()
 

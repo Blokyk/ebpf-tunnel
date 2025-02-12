@@ -1,15 +1,17 @@
 //go:build ignore
-#include <asm-generic/int-ll64.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <linux/bpf.h>
-#include <linux/netfilter_ipv4.h>
 #include <linux/in.h>
+#include <linux/netfilter_ipv4.h>
+#include <linux/sched.h>
+#include <linux/types.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "bpf-builtin.h"
+#include <bpf/bpf_tracing.h>
 #include "bpf-utils.h"
+#include "bpf-amd64.h"
 
 #undef bpf_printk
 #define bpf_printk(fmt, ...)                            \
@@ -23,6 +25,7 @@
 
 // maximum number of ports that can be ignored
 #define MAX_NOPROXY_PORTS 1
+#define MAX_PROXY_CHILDREN
 
 #define LOCALHOST 0x7f000001
 
@@ -30,7 +33,7 @@ struct Config {
   __u16 proxy_port;
   __u64 proxy_pid;
   __u16 real_proxy_port;
-  __u64 real_proxy_pid;
+  // __u64 real_proxy_pid;
 };
 
 struct Socket {
@@ -62,7 +65,7 @@ struct {
 } map_ports SEC(".maps");
 
 struct {
-  int (*type)[BPF_MAP_TYPE_HASH];
+  int (*type)[BPF_MAP_TYPE_LRU_HASH];
   int (*max_entries)[MAX_NOPROXY_PORTS];
   pid_t *key;
   __u16 *value;
@@ -85,11 +88,19 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   // This prevents the tunnel (in go or c) from being proxied
   if (curr_pid == conf->proxy_pid) return 1;
 
+  // if (curr_pid == conf->real_proxy_pid) {
+  //   bpf_printk("PID %d is the proxy, ignoring", curr_pid);
+  //   return 1;
+  // }
+
   __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
 
   // if this is the real proxy, don't proxy it
-  if (bound_port && *bound_port == conf->real_proxy_port)
+  if (bound_port != NULL)
     return 1;
+  else
+    (void)0;
+    // bpf_printk("Couldn't find any port linked to PID %d", curr_pid, curr_tgid);
 
   // This field contains the IPv4 address passed to the connect() syscall
   // a.k.a. connect to this socket destination address and port
@@ -114,7 +125,7 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   ctx->user_ip4 = htonl(LOCALHOST); // 127.0.0.1 == proxy IP
   ctx->user_port = htonl(conf->proxy_port << 16); // Proxy port
 
-  bpf_printk("Redirecting client connection to proxy\n");
+  // bpf_printk("Redirecting client connection to proxy\n");
 
   return 1;
 }
@@ -139,7 +150,7 @@ int cg_sock_ops(struct bpf_sock_ops *ctx) {
     }
   }
 
-  bpf_printk("sockops hook successful\n");
+  // bpf_printk("sockops hook successful\n");
 
   return 0;
 }
@@ -182,7 +193,7 @@ int cg_sock_opt(struct bpf_sockopt *ctx) {
   sa->sin_port = htons(sock->dst_port); // Destination Port
   ctx->retval = 0;
 
-  bpf_printk("Redirecting connection to original destination\n");
+  // bpf_printk("Redirecting connection to original destination\n");
 
   return 1;
 }
@@ -200,21 +211,24 @@ int cg_post_bind4(struct bpf_sock *ctx) {
   struct Config *conf = bpf_map_lookup_elem(&map_config, &key);
   if (!conf) return 1;
 
-  __u16 dst_port = ntohs(ctx->dst_port);
-
-  // if this isn't the real proxy, we don't care
-  if (dst_port != conf->real_proxy_port) return 1;
+  __u16 src_port = ctx->src_port; // why doesn't this require ntohs???
 
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
 
-  int res = bpf_map_update_elem(&map_bound_pids, &curr_pid, &dst_port, BPF_ANY);
-
-  if (res < 0) {
-    bpf_printk("Error trying to register PID %d as passthrough", curr_pid);
+  // if this isn't the real proxy, we don't care
+  if (src_port != conf->real_proxy_port) {
+    bpf_printk("PID %d was bound to port %d, but we don't care", curr_pid, src_port);
     return 1;
   }
 
-  bpf_printk("PID %d was just bound to %d, will let it passthrough", curr_pid, ctx->dst_port);
+  int res = bpf_map_update_elem(&map_bound_pids, &curr_pid, &src_port, BPF_ANY);
+
+  if (res != 0) {
+    bpf_printk("Error trying to register PID %d as passthrough: %d", curr_pid, res);
+    return 1;
+  }
+
+  bpf_printk("PID %d was just bound to %d, will let it passthrough", curr_pid, src_port);
 
   return 1;
 }

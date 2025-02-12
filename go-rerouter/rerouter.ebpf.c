@@ -233,4 +233,38 @@ int cg_post_bind4(struct bpf_sock *ctx) {
   return 1;
 }
 
+static int register_child_if_proxy(struct pt_regs *ctx, pid_t child_pid) {
+  pid_t curr_pid = bpf_get_current_pid_tgid() >> 32;
+
+  // bpf_printk("PID %d cloned into %d", curr_pid, child_pid);
+
+  __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
+
+  // if this isn't the process of the real proxy, we don't care
+  if (!bound_port) {
+    // bpf_printk("NON proxy pid %d cloned into child %d", curr_pid, child_pid);
+    return 0;
+  }
+
+  bpf_printk("Proxy (pid %d) just cloned into child %d", curr_pid, child_pid);
+
+  return 0;
+}
+
+SEC("kretprobe/sys_clone")
+int BPF_KRETPROBE(probe_clone, pid_t child_pid) {
+  if (child_pid != 0)
+    register_child_if_proxy(ctx, child_pid);
+
+  return 0;
+}
+
+SEC("kretprobe/sys_clone3")
+int BPF_KRETPROBE(probe_clone3, pid_t child_pid) {
+  if (child_pid != 0)
+    register_child_if_proxy(ctx, child_pid);
+
+  return 0;
+}
+
 char __LICENSE[] SEC("license") = "GPL";

@@ -74,6 +74,18 @@ func main() {
 	}
 	defer boundpidsLink.Close()
 
+	cloneProbeLink, err := link.Kretprobe("sys_clone", objs.ProbeClone, nil)
+	if err != nil {
+		log.Fatalf("Attaching clone probe: %v", err)
+	}
+	defer cloneProbeLink.Close()
+
+	clone3ProbeLink, err := link.Kretprobe("sys_clone3", objs.ProbeClone3, nil)
+	if err != nil {
+		log.Fatalf("Attaching clone3 probe: %v", err)
+	}
+	defer clone3ProbeLink.Close()
+
 	realProxyPid, err := getPidFromPort(REAL_PROXY_PORT)
 	if err != nil {
 		log.Printf("Couldn't get PID of real proxy: %v", err)

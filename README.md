@@ -13,7 +13,7 @@ tunnel the packets through there.
 
 **Right now, this doesn't support NTLM authentication, so for that
 scenario you'll still have to use Cntlm first, and redirect the packets
-there.** It also doesn't support remote proxies, but that should be too
+there.** It also doesn't support remote proxies, but that shouldn't be too
 hard to fix, since they're easier to support than local ones; I just
 implemented the things I needed first. [See the open issues for details](https://github.com/Blokyk/transparent-proxy-ebpf/issues)
 

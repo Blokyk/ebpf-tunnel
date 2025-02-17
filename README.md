@@ -62,15 +62,20 @@ system:
 - `gcc-multilib` -- includes everything possibly needed and more, but doesn't
   need any `dpkg` architecture change
 
-You can then generate the eBPF->Go bindings with
+You can then build the app with a simple `make all`, install the binaries (into
+`/usr/local` by default) with `sudo make install`.
+
 ```sh
-go generate
+make all && sudo make install
 ```
 
-And then build the app with
+A set of sample systemd service files are also included, with the `proxy-tunnel`
+intended to be used in coordination with Cntlm. You can install them with:
 ```sh
-go build
+sudo make install-sd
 ```
+
+Check `make help` for more details.
 
 ## Running && testing
 
@@ -81,10 +86,15 @@ go build
     <video src="https://github.com/user-attachments/assets/325745b2-9be1-43cd-bd64-14fa6ac5f5e0">
 </details>
 
-You need elevated privilege to run this (you're inserting a packet
+You need elevated privilege to run the rerouter (you're inserting a packet
 rewriter into the kernel after all):
+```sh
+make rerouter && sudo make run-rerouter
 ```
-sudo ./ebpf-tunnel
+
+You can then start the proxy tunnel (without sudo this time):
+```sh
+make tunnel && sudo make run-tunnel
 ```
 
 Currently, this is written mostly to pass things onto a local

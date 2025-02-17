@@ -93,7 +93,6 @@ func main() {
 		// if we found the real proxy's PID, update the the `bound_pid` map, since
 		// that means the proxy already called bind() so it won't be caught by our eBPF
 		log.Printf("Found already running proxy with PID %d, will ignore any connection from it", realProxyPid)
-		var realProxyPid uint32 = uint32(realProxyPid)
 		var realProxyPort uint16 = REAL_PROXY_PORT
 		err = objs.rerouterMaps.MapBoundPids.Update(&realProxyPid, &realProxyPort, ebpf.UpdateAny)
 		if err != nil {

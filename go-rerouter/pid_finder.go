@@ -74,7 +74,7 @@ func getPidFromInode(inode int) (int, error) {
 	return -1, fmt.Errorf("no process found for inode %d", inode)
 }
 
-func getPidFromPort(proxyPort uint16) (uint64, error) {
+func getPidFromPort(proxyPort uint16) (uint32, error) {
 	f, err := os.Open("/proc/net/tcp")
 	if err != nil {
 		return 0, fmt.Errorf("couldn't open /proc/net/tcp: %v", err)
@@ -120,7 +120,7 @@ func getPidFromPort(proxyPort uint16) (uint64, error) {
 			return 0, fmt.Errorf("got inode for real proxy, but couldn't find its PID: %v", err)
 		}
 
-		return uint64(proxyPid), nil
+		return uint32(proxyPid), nil
 	}
 
 	return 0, fmt.Errorf("couldn't find any process listening on port %d", proxyPort)

@@ -35,30 +35,32 @@ help:
 	@echo '  - CC, CFLAGS    Usual C compilation variables'
 
 rerouter: bin/ebpf-rerouter
+
 run-rerouter: bin/ebpf-rerouter
-	bin/ebpf-rerouter
+	sudo bin/ebpf-rerouter
 
 bin/ebpf-rerouter: bin/$(REROUTER)-rerouter
-	cp $^ $@
+	cp $< $@
 
 .PHONY: go-rerouter/ebpf-rerouter
 go-rerouter/ebpf-rerouter:
 	$(MAKE) -C go-rerouter ebpf-rerouter
-bin/go-rerouter: go-rerouter/ebpf-rerouter
-	cp $^ $@
+bin/go-rerouter: go-rerouter/ebpf-rerouter bin/
+	cp $< $@
 
 tunnel: bin/proxy-tunnel
+
 run-tunnel: bin/proxy-tunnel
 	bin/proxy-tunnel
 
 bin/proxy-tunnel: bin/$(TUNNEL)-tunnel
-	cp $^ $@
+	cp $< $@
 
 .PHONY: go-rerouter/tunnel
 go-tunnel/tunnel:
 	$(MAKE) -C go-tunnel tunnel
-bin/go-tunnel: go-tunnel/tunnel
-	cp $^ $@
+bin/go-tunnel: go-tunnel/tunnel bin/
+	cp $< $@
 
 %/:
 	mkdir -p $@

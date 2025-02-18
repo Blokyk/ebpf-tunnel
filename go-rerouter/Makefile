@@ -3,12 +3,14 @@ ebpf-rerouter: rerouter.go
 
 rerouter.go: pid_finder.go
 rerouter.go: rerouter_x86_bpfel.go
+	@touch $@
 
-rerouter_x86_bpfel.%: rerouter.ebpf.c
+rerouter_x86_bpfel.go: rerouter_x86_bpfel.o
+rerouter_x86_bpfel.o: rerouter.ebpf.c
 	go generate
 
 rerouter.ebpf.c: bpf-amd64.h bpf-builtin.h bpf-utils.h
-	@
+	@touch $@
 
 clean:
-	rm ebpf-rerouter rerouter_*bpf*.go *.o
+	rm -f ebpf-rerouter rerouter_*bpf*.go *.o

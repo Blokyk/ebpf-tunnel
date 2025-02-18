@@ -4,4 +4,4 @@ tunnel:
 	$(CC) $(CFLAGS) tunnel.c -o tunnel
 
 clean:
-	rm c-tunnel
+	rm -f c-tunnel

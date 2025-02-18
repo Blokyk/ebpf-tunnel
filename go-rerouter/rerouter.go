@@ -45,7 +45,7 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 		Program: objs.CgConnect4,
 	})
 	if err != nil {
-		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %v", err)
+		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %w", err)
 	}
 
 	sockopsLink, err := link.AttachCgroup(link.CgroupOptions{
@@ -54,7 +54,7 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 		Program: objs.CgSockOps,
 	})
 	if err != nil {
-		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %v", err)
+		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %w", err)
 	}
 
 	sockoptLink, err := link.AttachCgroup(link.CgroupOptions{
@@ -63,7 +63,7 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 		Program: objs.CgSockOpt,
 	})
 	if err != nil {
-		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %v", err)
+		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %w", err)
 	}
 
 	postBind4Link, err := link.AttachCgroup(link.CgroupOptions{
@@ -72,17 +72,17 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 		Program: objs.CgPostBind4,
 	})
 	if err != nil {
-		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %v", err)
+		return rerouterLinks{}, fmt.Errorf("(CgPostBind4 program) %w", err)
 	}
 
 	cloneProbeLink, err := link.Kretprobe("sys_clone", objs.ProbeClone, nil)
 	if err != nil {
-		return rerouterLinks{}, fmt.Errorf("(clone probe) %v", err)
+		return rerouterLinks{}, fmt.Errorf("(clone probe) %w", err)
 	}
 
 	clone3ProbeLink, err := link.Kretprobe("sys_clone3", objs.ProbeClone3, nil)
 	if err != nil {
-		return rerouterLinks{}, fmt.Errorf("(clone3 probe) %v", err)
+		return rerouterLinks{}, fmt.Errorf("(clone3 probe) %w", err)
 	}
 
 	return rerouterLinks{

@@ -24,7 +24,7 @@
 #define MAX_CONNECTIONS 20000
 
 // maximum number of ports that can be ignored
-#define MAX_NOPROXY_PORTS 1
+#define MAX_WHITELIST_PORTS 100
 #define MAX_PROXY_CHILDREN
 
 #define LOCALHOST 0x7f000001
@@ -34,6 +34,7 @@ struct Config {
   __u64 proxy_pid;
   __u16 real_proxy_port;
   // __u64 real_proxy_pid;
+  __u8 whitelist_count;
 };
 
 struct Socket {
@@ -65,8 +66,15 @@ struct {
 } map_ports SEC(".maps");
 
 struct {
+  int (*type)[BPF_MAP_TYPE_ARRAY];
+  int (*max_entries)[MAX_WHITELIST_PORTS];
+  __u32 *key;
+  __u16 *value;
+} map_whitelist_ports SEC(".maps");
+
+struct {
   int (*type)[BPF_MAP_TYPE_LRU_HASH];
-  int (*max_entries)[MAX_NOPROXY_PORTS];
+  int (*max_entries)[MAX_WHITELIST_PORTS];
   pid_t *key;
   __u16 *value;
 } map_bound_pids SEC(".maps");
@@ -85,22 +93,13 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
 
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
 
-  // This prevents the tunnel (in go or c) from being proxied
-  if (curr_pid == conf->proxy_pid) return 1;
-
-  // if (curr_pid == conf->real_proxy_pid) {
-  //   bpf_printk("PID %d is the proxy, ignoring", curr_pid);
-  //   return 1;
-  // }
-
   __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
 
   // if this is the real proxy, don't proxy it
   if (bound_port != NULL)
     return 1;
   else
-    (void)0;
-    // bpf_printk("Couldn't find any port linked to PID %d", curr_pid, curr_tgid);
+    (void)0; // bpf_printk("Couldn't find any port linked to PID %d", curr_pid, curr_tgid);
 
   // This field contains the IPv4 address passed to the connect() syscall
   // a.k.a. connect to this socket destination address and port
@@ -198,25 +197,30 @@ int cg_sock_opt(struct bpf_sockopt *ctx) {
   return 1;
 }
 
-// This programs tries to detect if the current process is the real proxy's process,
-// by catching any call to bind(REAL_PROXY_PORT), and writing to a hash map that
-// keeps a list of the passthrough pids
+static long _is_in_callback_fn(void *map, const void *key, const __u16 *value, const __u16 *ctx) {
+  bpf_printk("Searching for %d, got %d", *ctx, *value);
+  return *ctx == *value ? 1 : 0; // 1 stops the iteration, 0 continues
+}
+
+static bool is_in(void *map, __u16 map_size, __u16 val) {
+  return bpf_for_each_map_elem(map, _is_in_callback_fn, &val, 0) < map_size;
+}
+
+// This programs tries to detect if the current process is on the noproxy list,
+// by catching any call to bind() with one of the whitelisted ports, and writing
+// to a hash map that keeps a list of the passthrough pids
 SEC("cgroup/post_bind4")
 int cg_post_bind4(struct bpf_sock *ctx) {
   // Only forward IPv4 TCP connections
   if (ctx->family != AF_INET) return 1;
   if (ctx->protocol != IPPROTO_TCP) return 1;
 
-  __u32 key = 0;
-  struct Config *conf = bpf_map_lookup_elem(&map_config, &key);
-  if (!conf) return 1;
-
   __u16 src_port = ctx->src_port; // why doesn't this require ntohs???
 
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
 
-  // if this isn't the real proxy, we don't care
-  if (src_port != conf->real_proxy_port) {
+  // if this port doesn't need to avoid rerouting, we don't care
+  if (!is_in(&map_whitelist_ports, MAX_WHITELIST_PORTS, src_port)) {
     bpf_printk("PID %d was bound to port %d, but we don't care", curr_pid, src_port);
     return 1;
   }
@@ -233,14 +237,14 @@ int cg_post_bind4(struct bpf_sock *ctx) {
   return 1;
 }
 
-static int register_child_if_proxy(struct pt_regs *ctx, pid_t child_pid) {
+static int register_child_if_parent_whitelisted(struct pt_regs *ctx, pid_t child_pid) {
   pid_t curr_pid = bpf_get_current_pid_tgid() >> 32;
 
   // bpf_printk("PID %d cloned into %d", curr_pid, child_pid);
 
   __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
 
-  // if this isn't the process of the real proxy, we don't care
+  // if this isn't a whitelisted process, we don't care
   if (!bound_port) {
     // bpf_printk("NON proxy pid %d cloned into child %d", curr_pid, child_pid);
     return 0;
@@ -254,7 +258,7 @@ static int register_child_if_proxy(struct pt_regs *ctx, pid_t child_pid) {
 SEC("kretprobe/sys_clone")
 int BPF_KRETPROBE(probe_clone, pid_t child_pid) {
   if (child_pid != 0)
-    register_child_if_proxy(ctx, child_pid);
+    register_child_if_parent_whitelisted(ctx, child_pid);
 
   return 0;
 }
@@ -262,7 +266,7 @@ int BPF_KRETPROBE(probe_clone, pid_t child_pid) {
 SEC("kretprobe/sys_clone3")
 int BPF_KRETPROBE(probe_clone3, pid_t child_pid) {
   if (child_pid != 0)
-    register_child_if_proxy(ctx, child_pid);
+    register_child_if_parent_whitelisted(ctx, child_pid);
 
   return 0;
 }

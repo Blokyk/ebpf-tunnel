@@ -12,7 +12,7 @@ install-sd: install-rerouter install-tunnel
 
 install-rerouter: ebpf-rerouter.service
 	systemctl enable $(realpath $<)
-install-tunnel: proxy-tunnel.service
+install-tunnel: cntlm-tunnel.service
 	systemctl enable $(realpath $<)
 
 help:

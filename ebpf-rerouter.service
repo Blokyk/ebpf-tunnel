@@ -1,8 +1,8 @@
 [Unit]
 Description=An eBPF filter to reroute all outgoing traffic through a tunnel
 Before=multi-user.target
-BindsTo=proxy-tunnel.service
-After=proxy-tunnel.service
+BindsTo=cntlm-tunnel.service
+After=cntlm-tunnel.service
 
 [Service]
 Type=exec

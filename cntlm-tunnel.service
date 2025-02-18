@@ -1,5 +1,5 @@
 [Unit]
-Description=A basic tunnel to forward any request through Cntlm
+Description=A basic tunnel to forward any TCP connection through Cntlm
 Before=multi-user.target
 BindsTo=cntlm.service
 After=cntlm.service

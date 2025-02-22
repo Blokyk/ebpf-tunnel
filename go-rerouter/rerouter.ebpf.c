@@ -99,7 +99,7 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   if (bound_port != NULL)
     return 1;
   else
-    (void)0; // bpf_printk("Couldn't find any port linked to PID %d", curr_pid, curr_tgid);
+    (void)0; // bpf_printk("Couldn't find any port linked to PID %d", curr_pid);
 
   // This field contains the IPv4 address passed to the connect() syscall
   // a.k.a. connect to this socket destination address and port
@@ -198,7 +198,7 @@ int cg_sock_opt(struct bpf_sockopt *ctx) {
 }
 
 static long _is_in_callback_fn(void *map, const void *key, const __u16 *value, const __u16 *ctx) {
-  bpf_printk("Searching for %d, got %d", *ctx, *value);
+  // bpf_printk("Searching for %d, got %d", *ctx, *value);
   return *ctx == *value ? 1 : 0; // 1 stops the iteration, 0 continues
 }
 

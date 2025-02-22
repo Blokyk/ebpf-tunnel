@@ -2,12 +2,17 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+)
+
+var (
+	ErrNoProcessForPort = errors.New("couldn't find any process listening on given port")
 )
 
 // Extract inode from a symbolic link pointing to the socket (simplified)
@@ -123,5 +128,5 @@ func getPidFromPort(proxyPort uint16) (uint32, error) {
 		return uint32(proxyPid), nil
 	}
 
-	return 0, fmt.Errorf("couldn't find any process listening on port %d", proxyPort)
+	return 0, ErrNoProcessForPort
 }

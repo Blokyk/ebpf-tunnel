@@ -23,8 +23,13 @@
 
 #define MAX_CONNECTIONS 20000
 
-// maximum number of ports that can be ignored
-#define MAX_BYPASS_PORTS 1000
+// maximum number of ports that can be bypassed
+#define MAX_BYPASS_PORTS 255
+
+// soft limit on the number of children per port; can be exceeded by a single port in 99% of cases,
+// and it's in an LRU map anyway, so if push comes to shove, the "oldest" connection will be dropped,
+// which is probably completely outdated/stale anyway
+#define MAX_CHILD_BY_PORT 255
 
 #define LOCALHOST 0x7f000001
 
@@ -70,7 +75,7 @@ struct {
 
 struct {
   int (*type)[BPF_MAP_TYPE_LRU_HASH];
-  int (*max_entries)[MAX_BYPASS_PORTS];
+  int (*max_entries)[MAX_BYPASS_PORTS * MAX_CHILD_BY_PORT];
   pid_t *key;
   __u16 *value;
 } map_bypass_pids SEC(".maps");

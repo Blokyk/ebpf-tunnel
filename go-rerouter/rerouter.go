@@ -56,8 +56,10 @@ func (links *rerouterLinks) Iterate() map[string]link.Link {
 
 // Attach eBPF programs to the root cgroup and the right kprobes
 func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
+	cgroup := CGROUP_PATH
+
 	connect4Link, err := link.AttachCgroup(link.CgroupOptions{
-		Path:    CGROUP_PATH,
+		Path:    cgroup,
 		Attach:  ebpf.AttachCGroupInet4Connect,
 		Program: objs.CgConnect4,
 	})
@@ -66,7 +68,7 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 	}
 
 	sockopsLink, err := link.AttachCgroup(link.CgroupOptions{
-		Path:    CGROUP_PATH,
+		Path:    cgroup,
 		Attach:  ebpf.AttachCGroupSockOps,
 		Program: objs.CgSockOps,
 	})
@@ -75,7 +77,7 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 	}
 
 	sockoptLink, err := link.AttachCgroup(link.CgroupOptions{
-		Path:    CGROUP_PATH,
+		Path:    cgroup,
 		Attach:  ebpf.AttachCGroupGetsockopt,
 		Program: objs.CgSockOpt,
 	})
@@ -84,7 +86,7 @@ func attachProgs(objs rerouterObjects) (rerouterLinks, error) {
 	}
 
 	postBind4Link, err := link.AttachCgroup(link.CgroupOptions{
-		Path:    CGROUP_PATH,
+		Path:    cgroup,
 		Attach:  ebpf.AttachCGroupInet4PostBind,
 		Program: objs.CgPostBind4,
 	})

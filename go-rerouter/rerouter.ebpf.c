@@ -114,8 +114,7 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   __u64 cookie = bpf_get_socket_cookie(ctx);
 
   // Store destination socket under cookie key
-  struct Socket sock;
-  __builtin_memset(&sock, 0, sizeof(sock));
+  struct Socket sock = {0};
   sock.dst_addr = dst_addr;
   sock.dst_port = dst_port;
   bpf_map_update_elem(&map_socks, &cookie, &sock, 0);

@@ -11,9 +11,11 @@ install: bin/ebpf-rerouter bin/proxy-tunnel
 install-sd: install-rerouter install-tunnel
 
 install-rerouter: ebpf-rerouter.service
-	systemctl enable $(realpath $<)
+	sudo install -t /etc/systemd/system $<
+	sudo systemctl enable $<
 install-tunnel: cntlm-tunnel.service
-	systemctl enable $(realpath $<)
+	sudo install -t /etc/systemd/system $<
+	sudo systemctl enable $<
 
 help:
 	@echo 'Generic targets:'
@@ -29,7 +31,7 @@ help:
 	@echo '  - run-tunnel    Run the tunnel'
 	@echo
 	@echo 'Available flags:'
-	@echo '  - PREFIX        Directory used by `install` variant [/usr/local]'
+	@echo '  - PREFIX        Directory used by `install` target [/usr/local]'
 	@echo '  - REROUTER      Selects the rerouter variant (values: [go])'
 	@echo '  - TUNNEL        Selects the tunnel variant (values: [go], c)'
 	@echo '  - CC, CFLAGS    Usual C compilation variables'

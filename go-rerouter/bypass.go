@@ -7,7 +7,7 @@ import (
 	"github.com/cilium/ebpf"
 )
 
-func addBoundPidForPort(port uint16, boundPidsMap *ebpf.Map) error {
+func setPidForPort(port uint16, boundPidsMap *ebpf.Map) error {
 	pid, err := getPidFromPort(port)
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func addBoundPidForPort(port uint16, boundPidsMap *ebpf.Map) error {
 	return nil
 }
 
-func addPortToWhitelist(port uint16, configMap *ebpf.Map, whitelist *ebpf.Map) error {
+func addPortToBypass(port uint16, configMap *ebpf.Map, whitelist *ebpf.Map) error {
 	var key uint32 = 0
 	var config rerouterConfig
 
@@ -54,13 +54,13 @@ func addPortToWhitelist(port uint16, configMap *ebpf.Map, whitelist *ebpf.Map) e
 	return nil
 }
 
-func whitelistPort(port uint16, maps rerouterMaps) error {
-	err := addPortToWhitelist(port, maps.MapConfig, maps.MapWhitelistPorts)
+func bypassPort(port uint16, maps rerouterMaps) error {
+	err := addPortToBypass(port, maps.MapConfig, maps.MapBypassPorts)
 	if err != nil {
 		return err
 	}
 
-	err = addBoundPidForPort(port, maps.MapBoundPids)
+	err = setPidForPort(port, maps.MapBypassPids)
 	if err != nil {
 		return fmt.Errorf("tried to whitelist port '%d' but: %w. We'll catch the PID with bind() hook", port, err)
 	}

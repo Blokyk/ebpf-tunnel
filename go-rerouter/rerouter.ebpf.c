@@ -24,8 +24,7 @@
 #define MAX_CONNECTIONS 20000
 
 // maximum number of ports that can be ignored
-#define MAX_WHITELIST_PORTS 100
-#define MAX_PROXY_CHILDREN
+#define MAX_BYPASS_PORTS 1000
 
 #define LOCALHOST 0x7f000001
 
@@ -67,17 +66,17 @@ struct {
 
 struct {
   int (*type)[BPF_MAP_TYPE_ARRAY];
-  int (*max_entries)[MAX_WHITELIST_PORTS];
+  int (*max_entries)[MAX_BYPASS_PORTS];
   __u32 *key;
   __u16 *value;
-} map_whitelist_ports SEC(".maps");
+} map_bypass_ports SEC(".maps");
 
 struct {
   int (*type)[BPF_MAP_TYPE_LRU_HASH];
-  int (*max_entries)[MAX_WHITELIST_PORTS];
+  int (*max_entries)[MAX_BYPASS_PORTS];
   pid_t *key;
   __u16 *value;
-} map_bound_pids SEC(".maps");
+} map_bypass_pids SEC(".maps");
 
 // This hook is triggered when a process (inside the cgroup where this is attached) calls the connect() syscall
 // It redirect the connection to the transparent proxy but stores the original destination address and port in a map_socks
@@ -93,7 +92,7 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
 
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
 
-  __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
+  __u16 *bound_port = bpf_map_lookup_elem(&map_bypass_pids, &curr_pid);
 
   // if this is the real proxy, don't proxy it
   if (bound_port != NULL)
@@ -219,12 +218,12 @@ int cg_post_bind4(struct bpf_sock *ctx) {
   __u64 curr_pid = bpf_get_current_pid_tgid() >> 32;
 
   // if this port doesn't need to avoid rerouting, we don't care
-  if (!is_in(&map_whitelist_ports, MAX_WHITELIST_PORTS, src_port)) {
+  if (!is_in(&map_bypass_ports, MAX_BYPASS_PORTS, src_port)) {
     bpf_printk("PID %d was bound to port %d, but we don't care", curr_pid, src_port);
     return 1;
   }
 
-  int res = bpf_map_update_elem(&map_bound_pids, &curr_pid, &src_port, BPF_ANY);
+  int res = bpf_map_update_elem(&map_bypass_pids, &curr_pid, &src_port, BPF_ANY);
 
   if (res != 0) {
     bpf_printk("Error trying to register PID %d as passthrough: %d", curr_pid, res);
@@ -241,7 +240,7 @@ static int register_child_if_parent_whitelisted(struct pt_regs *ctx, pid_t child
 
   // bpf_printk("PID %d cloned into %d", curr_pid, child_pid);
 
-  __u16 *bound_port = bpf_map_lookup_elem(&map_bound_pids, &curr_pid);
+  __u16 *bound_port = bpf_map_lookup_elem(&map_bypass_pids, &curr_pid);
 
   // if this isn't a whitelisted process, we don't care
   if (!bound_port) {

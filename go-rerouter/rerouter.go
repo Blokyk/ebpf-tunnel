@@ -247,14 +247,14 @@ func mmain() {
 		log.Fatalf("Failed to update proxyMaps map: %v", err)
 	}
 
-	err = whitelistPort(REAL_PROXY_PORT, objs.rerouterMaps)
+	err = bypassPort(REAL_PROXY_PORT, objs.rerouterMaps)
 	if err == nil {
 		log.Print("Added proxy to rerouter whitelist successfully")
 	} else {
 		log.Print(err)
 	}
 
-	whitelistPort(TUNNEL_PORT, objs.rerouterMaps)
+	bypassPort(TUNNEL_PORT, objs.rerouterMaps)
 	if err == nil {
 		log.Print("Added tunnel to rerouter whitelist successfully")
 	} else {

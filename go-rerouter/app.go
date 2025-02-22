@@ -51,12 +51,12 @@ func main() {
 }
 
 func reloadWhitelist(maps rerouterMaps) error {
-	err := whitelistPort(REAL_PROXY_PORT, maps)
+	err := bypassPort(REAL_PROXY_PORT, maps)
 	if err != nil && !errors.Is(err, ErrNoProcessForPort) {
 		return err
 	}
 
-	err = whitelistPort(TUNNEL_PORT, maps)
+	err = bypassPort(TUNNEL_PORT, maps)
 	if err != nil && !errors.Is(err, ErrNoProcessForPort) {
 		return err
 	}

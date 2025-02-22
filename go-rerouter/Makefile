@@ -1,7 +1,7 @@
 ebpf-rerouter: app.go
 	go build -o $@
 
-app.go: rerouter.go whitelist.go
+app.go: rerouter.go bypass.go
 	@touch $@
 
 rerouter.go: pid_finder.go

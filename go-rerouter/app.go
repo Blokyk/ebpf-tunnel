@@ -12,6 +12,13 @@ import (
 )
 
 func main() {
+	configFileFlag := cli.PathFlag{
+		Name:    "config",
+		Aliases: []string{"c"},
+		Usage:   "Load configuration from `file`",
+		Value:   "/etc/glassy.conf",
+	}
+
 	app := &cli.App{
 		Commands: []*cli.Command{
 			{
@@ -19,6 +26,7 @@ func main() {
 				Usage: "Start and attach the rerouter to the kernel, then exit. \n" +
 					"If it was already started, this will simply reconfigure it.",
 				Action: startCmd,
+				Flags:  []cli.Flag{&configFileFlag},
 			},
 			{
 				Name:   "stop",
@@ -29,17 +37,13 @@ func main() {
 				Name:   "run",
 				Usage:  "Like `start`, but the rerouter will exit when this process exits. (mostly meant for testing.)",
 				Action: runCmd,
+				Flags:  []cli.Flag{&configFileFlag},
 			},
 			{
-				Name:   "config",
-				Usage:  "Manage various aspects of the rerouter",
-				Action: configCmd,
-				Flags: []cli.Flag{
-					&cli.IntSliceFlag{
-						Name:  "whitelist",
-						Usage: "Don't reroute connections from the process listening on the given port. Can be repeated.",
-					},
-				},
+				Name:   "reload",
+				Usage:  "Reload rerouter configuration",
+				Action: reloadCmd,
+				Flags:  []cli.Flag{&configFileFlag},
 			},
 		},
 	}
@@ -64,7 +68,11 @@ func reloadWhitelist(maps rerouterMaps) error {
 	return nil
 }
 
-func configCmd(ctx *cli.Context) error {
+func loadConfig(configFile cli.Path) error {
+	return fmt.Errorf("loadConfig: not implemented :(")
+}
+
+func reloadCmd(ctx *cli.Context) error {
 	removeMemlock()
 
 	return fmt.Errorf("configCmd: not implemented :(")

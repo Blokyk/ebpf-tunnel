@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/cilium/ebpf"
 	"github.com/urfave/cli/v2"
@@ -48,8 +50,18 @@ func main() {
 	}
 }
 
-func reloadWhitelist() error {
+func reloadWhitelist(maps rerouterMaps) error {
+	err := whitelistPort(REAL_PROXY_PORT, maps)
+	if err != nil && !errors.Is(err, ErrNoProcessForPort) {
+		return err
+	}
 
+	err = whitelistPort(TUNNEL_PORT, maps)
+	if err != nil && !errors.Is(err, ErrNoProcessForPort) {
+		return err
+	}
+
+	return nil
 }
 
 func configCmd(ctx *cli.Context) error {
@@ -89,6 +101,14 @@ func runCmd(ctx *cli.Context) error {
 		log.Fatalf("Failed to update proxyMaps map: %v", err)
 	}
 
+	err = reloadWhitelist(objs.rerouterMaps)
+	if err != nil {
+		return fmt.Errorf("couldn't reload whitelist: %w", err)
+	}
+
+	for {
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func startCmd(ctx *cli.Context) error {

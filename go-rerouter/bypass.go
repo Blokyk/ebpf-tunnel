@@ -34,8 +34,8 @@ func addPortToBypass(port uint16, configMap *ebpf.Map, whitelist *ebpf.Map) erro
 		return err
 	}
 
-	if config.WhitelistCount >= uint8(whitelist.MaxEntries()) {
-		return fmt.Errorf("reached maximum whitelist capacity (%d), can't add any more", uint8(whitelist.MaxEntries()))
+	if config.WhitelistCount >= uint16(whitelist.MaxEntries()) {
+		return fmt.Errorf("reached maximum whitelist capacity (%d), can't add any more", uint16(whitelist.MaxEntries()))
 	}
 
 	nextIdx := uint32(config.WhitelistCount)

@@ -29,11 +29,8 @@
 #define LOCALHOST 0x7f000001
 
 struct Config {
-  __u16 proxy_port;
-  __u64 proxy_pid;
-  __u16 real_proxy_port;
-  // __u64 real_proxy_pid;
-  __u8 whitelist_count;
+  __u16 tunnel_port;
+  __u16 whitelist_count;
 };
 
 struct Socket {
@@ -118,11 +115,11 @@ int cg_connect4(struct bpf_sock_addr *ctx) {
   sock.dst_port = dst_port;
   bpf_map_update_elem(&map_socks, &cookie, &sock, 0);
 
-  // Redirect the connection to the proxy
-  ctx->user_ip4 = htonl(LOCALHOST); // 127.0.0.1 == proxy IP
-  ctx->user_port = htonl(conf->proxy_port << 16); // Proxy port
+  // Redirect the connection to the tunnel
+  ctx->user_ip4 = htonl(LOCALHOST); // 127.0.0.1 == tunnel IP
+  ctx->user_port = htonl(conf->tunnel_port << 16); // tunnel port
 
-  // bpf_printk("Redirecting client connection to proxy\n");
+  // bpf_printk("Redirecting client connection to tunnel\n");
 
   return 1;
 }

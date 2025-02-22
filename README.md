@@ -15,7 +15,7 @@ tunnel the packets through there.
 scenario you'll still have to use Cntlm first, and redirect the packets
 there.** It also doesn't support remote proxies, but that shouldn't be too
 hard to fix, since they're easier to support than local ones; I just
-implemented the things I needed first. [See the open issues for details](https://github.com/Blokyk/transparent-proxy-ebpf/issues)
+implemented the things I needed first. [See the open issues for details](https://github.com/Blokyk/transparent-proxy-ebpf/issues).
 
 *I'm not a Go dev, this is a fork of [dorkamotorka/transparent-proxy-ebpf](https://github.com/dorkamotorka/transparent-proxy-ebpf)
 that I tweaked to my needs. Feel free to submit pull requests or issues
@@ -79,27 +79,23 @@ Check `make help` for more details.
 
 ## Running && testing
 
-<details>
-    <summary>
-        Demo of <a href="https://github.com/dorkamotorka/transparent-proxy-ebpf">original app from dorkamotorka</a>
-    </summary>
-    <video src="https://github.com/user-attachments/assets/325745b2-9be1-43cd-bd64-14fa6ac5f5e0">
-</details>
-
-You need elevated privilege to run the rerouter (you're inserting a packet
-rewriter into the kernel after all):
+Running the tunnel and rerouter is as easy as running these commands in two
+different shells:
 ```sh
-make rerouter && sudo make run-rerouter
+# in shell 1:
+make run-tunnel
+
+# in shell 2:
+make run-rerouter
 ```
 
-You can then start the proxy tunnel (without sudo this time):
-```sh
-make tunnel && sudo make run-tunnel
-```
+Note: You will need elevated privilege to run the rerouter; you *are* inserting
+a packet rewriter into the kernel after all, and then tunneling your entire.
 
 Currently, this is written mostly to pass things onto a local
-unauthenticated proxy, like Cntlm. If you have that setup and installed,
+unauthenticated proxy, like Cntlm. If you have that installed and setup properly,
 you should configure it to listen on port 8080 (or modify
-[`REAL_PROXY_PORT` in `main.go`](https://github.com/Blokyk/transparent-proxy-ebpf/blob/8208e2727114ee22ac5813741fbaec760e4917cd/main.go#L27)), **and then** launch this transparent proxy. Now, even without
-configuring any proxy for the different apps on your computer (browser,
-apt, pip, git, etc.), everything should connect perfectly!
+[`REAL_PROXY_PORT` in `app.go`](https://github.com/Blokyk/transparent-proxy-ebpf/blob/v0.1/main.go#L27)),
+**and then** launch this transparent proxy. Now, even without configuring any
+proxy for the different apps on your computer (browser, apt, pip, git, etc.),
+everything should connect perfectly! :D

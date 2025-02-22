@@ -11,20 +11,21 @@ install: bin/ebpf-rerouter bin/proxy-tunnel
 install-sd: install-rerouter install-tunnel
 
 install-rerouter: ebpf-rerouter.service
-	sudo install -t /etc/systemd/system $<
-	sudo systemctl enable $<
+	install -t /etc/systemd/system $<
+	systemctl enable $<
 install-tunnel: cntlm-tunnel.service
-	sudo install -t /etc/systemd/system $<
-	sudo systemctl enable $<
+	install -t /etc/systemd/system $<
+	systemctl enable $<
 
 help:
 	@echo 'Generic targets:'
 	@echo '  - all'
 	@echo '  - clean'
-	@echo '  - install       Installs the rerouter and tunnel to the configured prefix.'
-	@echo '                  Might require sudo.'
-	@echo '  - install-sd    Installs a sample systemd service file to use the installed'
-	@echo '                  rerouter and tunnel. Might require sudo.'
+	@echo '  - install           Installs the rerouter and tunnel to the configured'
+	@echo '                      prefix. Might require sudo.'
+	@echo '  - install-rerouter  Installs '
+	@echo '  - install-sd        Installs a sample systemd service file to use the installed'
+	@echo '                      rerouter and tunnel. Might require sudo.'
 	@echo
 	@echo 'Development targets:'
 	@echo '  - run-rerouter  Run the eBPF rerouter'
@@ -39,7 +40,7 @@ help:
 rerouter: bin/ebpf-rerouter
 
 run-rerouter: bin/ebpf-rerouter
-	sudo bin/ebpf-rerouter
+	sudo bin/ebpf-rerouter run
 
 bin/ebpf-rerouter: bin/$(REROUTER)-rerouter
 	cp $< $@

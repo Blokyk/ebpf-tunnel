@@ -45,11 +45,13 @@ install-tunnel: $(SD_PREFIX)/cntlm-tunnel.service $(SD_PREFIX)/proxy-tunnel.targ
 	systemctl enable $^
 
 uninstall-rerouter:
+	systemctl stop ebpf-rerouter.service
 	systemctl disable ebpf-rerouter.service
 	rm $(SD_PREFIX)/ebpf-rerouter.service
 	rm $(SD_PREFIX)/proxy-tunnel.target
 
 uninstall-tunnel:
+	systemctl stop cntlm-tunnel.service
 	systemctl disable cntlm-tunnel.service
 	rm $(SD_PREFIX)/cntlm-tunnel.service
 

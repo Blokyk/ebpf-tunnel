@@ -69,13 +69,14 @@ You can then build the app with a simple `make all`, install the binaries (into
 make all && sudo make install
 ```
 
-A set of sample systemd service files are also included, with the `proxy-tunnel`
-intended to be used in coordination with Cntlm. You can install them with:
-```sh
-sudo make install-sd
-```
+(Check `make help` for more details and compile-time options.)
 
-Check `make help` for more details.
+You can then run `ebpf-rerouter` and `proxy-tunnel` just as any other program
+(as long as the installation prefix is in your PATH of course). You should refer
+to each command's help for more info.
+
+> [!NOTE]: For a more permanent and automatic solution for managing the
+> rerouter and tunnel, see [the sample systemd files in `systemd/`](systemd/).
 
 ## Running && testing
 

@@ -1,6 +1,5 @@
 [Unit]
 Description=A basic tunnel to forward any TCP connection through Cntlm
-Before=multi-user.target
 BindsTo=cntlm.service
 After=cntlm.service
 
@@ -11,4 +10,4 @@ RestartSec=1
 ExecStart=proxy-tunnel
 
 [Install]
-WantedBy=multi-user.target
+RequiredBy=proxy-tunnel.target

@@ -5,27 +5,24 @@ PREFIX ?= /usr/local
 .PHONY: all rerouter tunnel install
 all: rerouter tunnel
 
-install: bin/ebpf-rerouter bin/proxy-tunnel
-	install -t $(PREFIX)/bin $^
+$(PREFIX)/bin/%: bin/%
+	install -Dt $(PREFIX)/bin $<
 
-install-sd: install-rerouter install-tunnel
+install: $(PREFIX)/bin/ebpf-rerouter $(PREFIX)/bin/proxy-tunnel
 
-install-rerouter: ebpf-rerouter.service
-	install -t /etc/systemd/system $<
-	systemctl enable $<
-install-tunnel: cntlm-tunnel.service
-	install -t /etc/systemd/system $<
-	systemctl enable $<
+install-sd:
+	$(MAKE) -C systemd install
 
 help:
 	@echo 'Generic targets:'
-	@echo '  - all'
-	@echo '  - clean'
-	@echo '  - install           Installs the rerouter and tunnel to the configured'
-	@echo '                      prefix. Might require sudo.'
-	@echo '  - install-rerouter  Installs '
-	@echo '  - install-sd        Installs a sample systemd service file to use the installed'
-	@echo '                      rerouter and tunnel. Might require sudo.'
+	@echo '  - all           Builds the default variants of the rerouter and the tunnel'
+	@echo '  - clean         Delete generate files and binaries'
+	@echo
+	@echo 'Installation:'
+	@echo '  - install       Installs the rerouter and tunnel to the configured'
+	@echo '                  prefix. Might require sudo.'
+	@echo '  - install-sd    Installs a set of sample systemd service files. See'
+	@echo '                  systemd/README for more info. Requires sudo.'
 	@echo
 	@echo 'Development targets:'
 	@echo '  - run-rerouter  Run the eBPF rerouter'

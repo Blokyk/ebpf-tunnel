@@ -15,7 +15,7 @@ import (
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
-	"github.com/cilium/ebpf/rlimit"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -174,8 +174,7 @@ func pinAllLinks(links *rerouterLinks) error {
 	for linkName, link := range links.Iterate() {
 		err := pinLink(link, linkName)
 
-		// todo: should be !errors.Is(err, syscall.ENOTSUP) (+EECIST) but ebpf-go uses %v instead of %w >:|
-		if err != nil && !strings.HasSuffix(err.Error(), "not supported") && !strings.HasSuffix(err.Error(), "file exists") {
+		if err != nil && !errors.Is(err, ebpf.ErrNotSupported) && !errors.Is(err, unix.EEXIST) {
 			return err
 		}
 	}

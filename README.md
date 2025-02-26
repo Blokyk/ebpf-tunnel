@@ -1,5 +1,20 @@
 # Transparent proxying with eBPF and Go
 
+⚠️ Don't actually use this; there are much better ways to do this; for example,
+[tun2socks](https://github.com/xjasonlyu/tun2socks) provides a great proxying
+tunnel, and its wiki has all you need to set it up to be transparent. There are
+**MANY** "rerouters" you can use to route traffic to a tunnel, though the
+simplest one is probably just using NFTables (you can find a basic example
+[here](https://gist.github.com/Blokyk/00b8a9283f770db7113ddad64adbe519), but
+there are much better ones around).
+
+*This project was mainly a way for me to learn about eBPF, and that goal has
+been fulfilled quite nicely for a first project. I don't particularly plan
+on maintaining it any further (and honestly, seeing so many much better
+alternatives has somewhat demotivated me). I'm not archiving it since I might
+make a few more commits here and there in the future when I'm feeling in the
+mood, but don't expect anything.*
+
 ## What ?
 
 A "transparent" or "invisible" proxy is one that acts with the user needing to

@@ -7,10 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/cilium/ebpf"
@@ -52,6 +50,16 @@ func (links *rerouterLinks) Iterate() map[string]link.Link {
 		"CloneProbe":    links.CloneProbe,
 		"Clone3Probe":   links.Clone3Probe,
 	}
+}
+
+func makeBpfPinFolder() error {
+	// make sure the /sys/fs/bpf/rerouter folder exists so we can our objects there
+	err := os.Mkdir(BPF_FS, 0755)
+	if err != nil && !errors.Is(err, fs.ErrExist) {
+		return fmt.Errorf("failed to create rerouter bpf pin directory: %w", err)
+	}
+
+	return nil
 }
 
 // Attach eBPF programs to the root cgroup and the right kprobes
@@ -180,85 +188,4 @@ func pinAllLinks(links *rerouterLinks) error {
 	}
 
 	return nil
-}
-
-func removeMemlock() {
-	// Remove resource limits for kernels <5.11.
-	if err := rlimit.RemoveMemlock(); err != nil {
-		log.Fatalf("Couldn't remove ressource limit: %v. (hint: you need to run this as root)", err)
-	}
-}
-
-func mmain() {
-	rerouterSpec, err := loadRerouter()
-	if err != nil {
-		log.Fatalf("Error loading eBPF program: %v", err)
-	}
-
-	// make sure the /sys/fs/bpf/rerouter folder exists so we can our objects there
-	err = os.Mkdir(BPF_FS, 0755)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
-		log.Fatalf("Failed to create rerouter bpf pin directory: %b", err)
-	}
-
-	// read the programs from binary into a collection
-	rerouterCol, err := ebpf.NewCollectionWithOptions(rerouterSpec, ebpf.CollectionOptions{Maps: ebpf.MapOptions{PinPath: BPF_FS}})
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rerouterCol.Close()
-
-	// pin the programs or load them from the pin
-	err = loadAndPinProgs(rerouterCol, rerouterSpec)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// write the col to a type-safe representation for attachprogs
-	// todo: rewrite this to use the collection directly, i have a stash at home
-	var objs rerouterObjects
-	if err := rerouterCol.Assign(&objs); err != nil {
-		log.Fatalf("Error assigning loaded eBPF program: %v. (hint: you probably forgot to do `go generate`.)", err)
-	}
-	defer objs.Close()
-
-	links, err := attachProgs(objs)
-	if err != nil {
-		log.Fatalf("Couldn't attach some programs: %v. (hint: you probably forgot to do `go generate`.)", err)
-	}
-	defer links.Close()
-
-	err = pinAllLinks(&links)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Send the tunnel port to the eBPF, so it knows where to redirect
-	var key uint32 = 0
-	config := rerouterConfig{
-		TunnelPort:     TUNNEL_PORT,
-		WhitelistCount: 0,
-	}
-	err = objs.rerouterMaps.MapConfig.Update(&key, &config, ebpf.UpdateAny)
-	if err != nil {
-		log.Fatalf("Failed to update proxyMaps map: %v", err)
-	}
-
-	err = bypassPort(REAL_PROXY_PORT, objs.rerouterMaps)
-	if err == nil {
-		log.Print("Added proxy to rerouter whitelist successfully")
-	} else {
-		log.Print(err)
-	}
-
-	bypassPort(TUNNEL_PORT, objs.rerouterMaps)
-	if err == nil {
-		log.Print("Added tunnel to rerouter whitelist successfully")
-	} else {
-		log.Print(err)
-	}
-
-	log.Printf("eBPF rerouter setup finished, redirecting all requests to %d", TUNNEL_PORT)
-	fmt.Print("Press Enter to exit")
-	fmt.Scanln()
 }

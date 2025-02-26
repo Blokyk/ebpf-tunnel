@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/rlimit"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,6 +53,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func removeMemlock() error {
+	// Remove resource limits for kernels <5.11.
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return fmt.Errorf("couldn't remove ressource limit: %w. (hint: you need to run this as root)", err)
+	}
+
+	return nil
 }
 
 func reloadWhitelist(maps rerouterMaps) error {
@@ -117,9 +127,76 @@ func runCmd(ctx *cli.Context) error {
 }
 
 func startCmd(ctx *cli.Context) error {
-	removeMemlock()
+	// we have to remove our process's default memory limits to do anything useful with eBPF
+	if err := removeMemlock(); err != nil {
+		return err
+	}
 
-	return fmt.Errorf("startCmd: not implemented :(")
+	// make sure the bpf/rerouter folder exists so we can our programs there
+	if err := makeBpfPinFolder(); err != nil {
+		return err
+	}
+
+	// load the 'spec' (metadata+code) for our eBPF objects
+	rerouterSpec, err := loadRerouter()
+	if err != nil {
+		return fmt.Errorf("couldn't load eBPF program: %w", err)
+	}
+
+	// read the programs from binary into a collection, to iterate over it easily
+	rerouterCol, err := ebpf.NewCollectionWithOptions(rerouterSpec, ebpf.CollectionOptions{Maps: ebpf.MapOptions{PinPath: BPF_FS}})
+	if err != nil {
+		return err
+	}
+	defer rerouterCol.Close()
+
+	// pin the programs, or reload them from the pin (which mutates the rerouterCol object)
+	err = loadAndPinProgs(rerouterCol, rerouterSpec)
+	if err != nil {
+		return err
+	}
+
+	// write the collection to a type-safe representation for attachProgs
+	// todo: rewrite this to use the collection directly, i have a stash at home
+	var objs rerouterObjects
+	if err := rerouterCol.Assign(&objs); err != nil {
+		return fmt.Errorf("couldn't assign loaded eBPF program: %w. (hint: you probably forgot to do `go generate`.)", err)
+	}
+	defer objs.Close()
+
+	links, err := attachProgs(objs)
+	if err != nil {
+		return fmt.Errorf("couldn't attach some programs: %w. (hint: you probably forgot to do `go generate`.)", err)
+	}
+	defer links.Close()
+
+	err = pinAllLinks(&links)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Setup the initial config object for the rerouter
+	var key uint32 = 0
+	config := rerouterConfig{
+		TunnelPort:     TUNNEL_PORT,
+		WhitelistCount: 0,
+	}
+	err = objs.rerouterMaps.MapConfig.Update(&key, &config, ebpf.UpdateAny)
+	if err != nil {
+		log.Fatalf("Failed to update proxyMaps map: %v", err)
+	}
+
+	if err := reloadWhitelist(objs.rerouterMaps); err != nil {
+		return err
+	}
+
+	log.Printf("eBPF rerouter setup finished, redirecting all requests to %d", TUNNEL_PORT)
+	// fmt.Print("Press Enter to exit")
+	// fmt.Scanln()
+
+	for {
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func stopCmd(ctx *cli.Context) error {

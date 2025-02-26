@@ -189,3 +189,25 @@ func pinAllLinks(links *rerouterLinks) error {
 
 	return nil
 }
+
+func unpinAll() error {
+	dirEntries, err := os.ReadDir(BPF_FS)
+	if err != nil {
+		return nil
+	}
+
+	for _, f := range dirEntries {
+		path := filepath.Join(BPF_FS, f.Name())
+		prog, err := ebpf.LoadPinnedProgram(path, nil)
+		if err != nil {
+			return err
+		}
+
+		err = prog.Unpin()
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}

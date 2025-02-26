@@ -202,5 +202,5 @@ func startCmd(ctx *cli.Context) error {
 func stopCmd(ctx *cli.Context) error {
 	removeMemlock()
 
-	return fmt.Errorf("stopCmd: not implemented :(")
+	return unpinAll()
 }

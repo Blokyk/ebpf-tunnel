@@ -29,3 +29,6 @@ struct sockaddr_in get_original_dst(int conn_fd);
 
 bool send_exactly(int fd, void *buf, size_t buflen);
 bool recv_exactly(int fd, void *buf, size_t buflen);
+
+/// Reads the given socket until a \r\n\r\n (double CRLF) sequence
+void discard_http_resp(int fd);

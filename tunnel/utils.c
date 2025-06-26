@@ -3,10 +3,13 @@
 #include <arpa/inet.h>
 #include <linux/netfilter_ipv4.h>
 #include <netdb.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#define RECV_BUF_SIZE 1024
 
 /* set of character for strspn() */
 const char *digits    = "0123456789";
@@ -89,6 +92,9 @@ bool send_exactly(int fd, void *buf, size_t buflen) {
         buflen -= written;
     } while (buflen != 0 && written > 0);
 
+    // final send call without MSG_MORE to tell the OS we're done
+    send(fd, buf, 0, 0);
+
     return written != -1; // != -1 ?
 }
 
@@ -107,4 +113,27 @@ bool recv_exactly(int fd, void *buf, size_t buflen) {
     // } while (buflen != 0 && bytes_read > 0);
 
     // return bytes_read != -1; // != -1 ?
+}
+
+void discard_http_resp(int fd) {
+    char buf[RECV_BUF_SIZE];
+
+    ssize_t bytes_read = 0;
+
+    do {
+        bytes_read = recv(fd, buf, RECV_BUF_SIZE, MSG_PEEK);
+
+        char* crlf_pos = memmem(buf, bytes_read, "\r\n\r\n", 4);
+
+        if (crlf_pos != NULL) {
+            size_t crlf_offset = crlf_pos - buf;
+            trace("discarded the last %ld bytes of http response", crlf_offset);
+            // now that we've found the CRLF, just read everything up to and including it
+            recv(fd, buf, crlf_offset + 4, 0);
+            break;
+        }
+
+        // if we couldn't find it, just consume the buffer we just peeked at
+        recv(fd, buf, bytes_read, 0); // note: we only read `bytes_read` bytes in case we since received more bytes that we couldn't look at
+    } while (bytes_read > 0);
 }

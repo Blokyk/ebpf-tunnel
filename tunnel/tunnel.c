@@ -75,7 +75,7 @@ bool confirm_handshake(int proxy_fd) {
     if (status_code != 200)
         fprintf(stderr, "Handshake failed: got status code 200, got %d\n", status_code);
 
-    // fixme: we need to consume the whole http response
+    discard_http_resp(proxy_fd);
 
     return status_code == 200;
 }
@@ -164,10 +164,10 @@ int main(void) {
         exit(EXIT_FAILURE);
     }
 
-    #ifndef DEBUG
+    // #ifndef DEBUG
         bool reuse_addr = true;
         setsockopt(listening_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-    #endif // DEBUG
+    // #endif // DEBUG
 
     struct sockaddr_in addr = {
         .sin_family = AF_INET,

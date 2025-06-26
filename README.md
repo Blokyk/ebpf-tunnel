@@ -5,7 +5,7 @@
 tunnel, and its wiki has all you need to set it up to be transparent. There are
 **MANY** "rerouters" you can use to route traffic to a tunnel, though the
 simplest one is probably just using NFTables (you can find a basic example
-[here](https://gist.github.com/Blokyk/00b8a9283f770db7113ddad64adbe519), but
+[here](https://gist.github.com/Blokyk/354d7dd5b8793069d81fb150373e49b2), but
 there are much better ones around).
 
 *This project was mainly a way for me to learn about eBPF, and that goal has

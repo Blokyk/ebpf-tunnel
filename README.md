@@ -1,6 +1,6 @@
 # Transparent proxying with eBPF and Go
 
-⚠️ Don't actually use this; there are much better ways to do this; for example,
+⚠️ Don't actually use this! There are much better ways to do this; for example,
 [tun2socks](https://github.com/xjasonlyu/tun2socks) provides a great proxying
 tunnel, and its wiki has all you need to set it up to be transparent. There are
 **MANY** "rerouters" you can use to route traffic to a tunnel, though the
@@ -17,8 +17,8 @@ mood, but don't expect anything.*
 
 ## What ?
 
-A "transparent" or "invisible" proxy is one that acts with the user needing to
-configure it. It generally doesn't affect requests significantly but instead
+A "transparent" or "invisible" proxy is one that acts without the user needing
+to configure it. It generally doesn't affect requests significantly but instead
 just forwards them silently.
 
 This repository includes an eBPF program that redirects all outgoing TCP
@@ -39,7 +39,7 @@ for any blunder I might have made!*
 ## Why ?
 
 I'm a student that is currently forced to work on a school project
-behind the school's (authenticated, NTLM) proxy, with no real way to
+behind the school's (NTLM-authenticated) proxy, with no real way to
 bypass it easily without getting in trouble. However, most toolchains,
 runtimes, and programs have an absolutely abysmal support for proxies,
 especially authenticated ones. It's also **wildly** unsafe to just
@@ -48,10 +48,10 @@ give out proxy logins to any program that needs internet access.
 While the authentication problems can be somewhat relieved by using
 [Cntlm](https://cntlm.sourceforge.net/), proxy support is still quite
 lacking, especially for graphical or specialized programs. Some of them
-don't read environment variables instead need hidden options, others
-have to be passed through an intermediate program, and others still just
+don't read environment variables but instead rely on hidden options; others
+have to be passed through an intermediate program; and others still just
 don't support it at all. (Coincidentally, the Go toolchain has pretty
-bad/weird support for proxies as well, this was a *pleasure* to modify.)
+bad/weird support for proxies as well, so this was a *pleasure* to write.)
 
 Ideally, we'd like *all* packets to go through the proxy automatically,
 on a system-wide basis, without the program having to care about it at
@@ -90,7 +90,8 @@ You can then run `ebpf-rerouter` and `proxy-tunnel` just as any other program
 (as long as the installation prefix is in your PATH of course). You should refer
 to each command's help for more info.
 
-> [!NOTE]: For a more permanent and automatic solution for managing the
+> [!NOTE]
+> For a more permanent and automatic solution for managing the
 > rerouter and tunnel, see [the sample systemd files in `systemd/`](systemd/).
 
 ## Running && testing
@@ -105,8 +106,9 @@ make run-tunnel
 make run-rerouter
 ```
 
-Note: You will need elevated privilege to run the rerouter; you *are* inserting
-a packet rewriter into the kernel after all, and then tunneling your entire.
+> [!NOTE]
+> You will need elevated privilege to run the rerouter; you *are* inserting
+> a packet rewriter into the kernel after all, and then tunneling your entire.
 
 Currently, this is written mostly to pass things onto a local
 unauthenticated proxy, like Cntlm. If you have that installed and setup properly,

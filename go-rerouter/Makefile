@@ -9,6 +9,7 @@ rerouter.go: rerouter_x86_bpfel.go
 	@touch $@
 
 rerouter_x86_bpfel.go: rerouter_x86_bpfel.o
+	@touch $@
 rerouter_x86_bpfel.o: rerouter.ebpf.c
 	go generate
 
